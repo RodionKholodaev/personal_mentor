@@ -24,3 +24,6 @@ build/
 
 # база данных
 database.db
+
+.env
+*.env
