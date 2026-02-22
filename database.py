@@ -59,3 +59,49 @@ def save_user_profile(user_id, sex=None, birthdate=None, height_cm=None, weight_
         conn.commit()
     finally:
         conn.close()
+
+
+def get_user_profile(tg_user_id: int)-> dict | None:
+
+    conn = sqlite3.connect('database.db')
+    
+    # Настраиваем row_factory, чтобы получать данные в виде словаря, а не кортежа
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    try:
+        # Пишем запрос с JOIN
+        # Мы объединяем таблицы users и user_profile по внутреннему id
+        query = """
+        SELECT 
+            u.id,
+            u.tg_user_id,
+            u.timezone,
+            p.sex,
+            p.birthdate,
+            p.height_cm,
+            p.weight_kg,
+            p.activity_level,
+            p.goal
+        FROM users u
+        JOIN user_profile p ON u.id = p.user_id -- соединили таблицы по u.id = p.user_id
+        WHERE u.tg_user_id = ? -- указали tg_user_id
+        """
+        
+        cursor.execute(query, (tg_user_id,))
+        result = cursor.fetchone()
+
+        if result:
+            # Превращаем результат в обычный словарь Python
+            return dict(result)
+        else:
+            return None # Если пользователь не найден или профиль не заполнен
+
+    except sqlite3.Error as e:
+        print(f"Ошибка при работе с базой данных: {e}")
+        return None
+    finally:
+        # Всегда закрываем соединение
+        conn.close()
+    
+

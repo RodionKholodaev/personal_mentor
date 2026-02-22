@@ -3,7 +3,8 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 
-
+from services import message_maker
+from ai_client import make_week_plan
 from database import save_user_profile
 # Создаем роутер
 router = Router()
@@ -197,16 +198,16 @@ async def get_birthdate(message: types.Message, state: FSMContext):
             activity_level=user_data.get("activity_level")
         )
 
-        await message.answer(
-            f"Спасибо за ответы!\n"
-            f"Ваш рост: {user_data['height']} см\n"
-            f"Ваш вес: {user_data['weight']} кг\n"
-            f"Ваша цель: {user_data['goal']}\n"
-            f"Ваш пол: {user_data['sex']}\n"
-            f"Ваш уровень активности: {user_data['activity_level']}\n"
-            f"Ваша дата рождения: {user_data['birthdate']}",
-            reply_markup=types.ReplyKeyboardRemove()
-        )
+        description = message_maker.get_user_description(message.from_user.id)
+        model = 'google/gemini-2.0-flash-lite-001'
+        temperature = None
+
+        week_plan_json = await make_week_plan(description,model, temperature)
+
+        plan_messages = message_maker.get_week_plan(week_plan_json)
+
+        for msg_text in plan_messages:
+            await message.answer(msg_text, parse_mode="Markdown")
 
         await state.clear()
     except ValueError:
