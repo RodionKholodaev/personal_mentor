@@ -1,4 +1,4 @@
-PRAGMA foreign_keys = ON;
+PRAGMA foreign_keys = ON; -- это делает так что база данных удаляет все записи что ссылаются на удаленный объект
 
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TEXT NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_users_tg_user_id ON users(tg_user_id); 
+CREATE INDEX IF NOT EXISTS idx_users_tg_user_id ON users(tg_user_id); -- позволяет быстро искать информацию по таблицам
 
 
 CREATE TABLE IF NOT EXISTS user_profile (
@@ -20,12 +20,13 @@ CREATE TABLE IF NOT EXISTS user_profile (
     goal TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    -- тут нужно хранить бжу и каллории
 );
 
 
 
 CREATE TABLE IF NOT EXISTS user_preferences (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY AUTOINCREMENT, -- полезно для удаления записей и соединения таблиц
     user_id INTEGER NOT NULL,
     type TEXT NOT NULL,
     text TEXT NOT NULL,
@@ -36,70 +37,27 @@ CREATE TABLE IF NOT EXISTS user_preferences (
 
 CREATE INDEX IF NOT EXISTS idx_user_preferences_user_id ON user_preferences(user_id);
 
-
-CREATE TABLE IF NOT EXISTS meal_plans (
+CREATE TABLE IF NOT EXISTS generated_meals (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
-    date TEXT NOT NULL,
-    status TEXT NOT NULL CHECK (status IN ('draft', 'approved', 'archived')),
-    totals_json TEXT,
-    created_at TEXT NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    UNIQUE (user_id, date) -- один план на день
+    planned_date TEXT NOT NULL,      -- Дата (ГГГГ-ММ-ДД)
+    meal_type TEXT NOT NULL,         -- 'breakfast', 'lunch', 'dinner'
+    recipe_json TEXT NOT NULL,       -- Весь ответ нейросети в формате JSON
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_meal_plans_user_id ON meal_plans(user_id);
-CREATE INDEX IF NOT EXISTS idx_meal_plans_date ON meal_plans(date);
-
-
-CREATE TABLE IF NOT EXISTS meals (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    plan_id INTEGER NOT NULL,
-    meal_type TEXT NOT NULL CHECK (meal_type IN ('breakfast', 'lunch', 'dinner', 'snack')),
-    time_prepare TEXT,
-    time_eat TEXT,
-    title TEXT NOT NULL,
-    nutrition_json TEXT,
-    recipe_id INTEGER,
-    notes TEXT,
-    FOREIGN KEY (plan_id) REFERENCES meal_plans(id) ON DELETE CASCADE,
-    FOREIGN KEY (recipe_id) REFERENCES recipes(id) ON DELETE SET NULL
+CREATE TABLE IF NOT EXISTS weekly_shopping_lists (
+    user_id INTEGER NOT NULL,
+    week_start_date TEXT NOT NULL,
+    items_json TEXT NOT NULL, -- Тот самый массив из нейросети
+    PRIMARY KEY (user_id, week_start_date),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_meals_plan_id ON meals(plan_id);
-CREATE INDEX IF NOT EXISTS idx_meals_recipe_id ON meals(recipe_id);
+CREATE INDEX IF NOT EXISTS idx_meals_query ON generated_meals(user_id, planned_date);
 
-
-CREATE TABLE IF NOT EXISTS recipes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    title TEXT NOT NULL,
-    servings INTEGER,
-    ingredients_json TEXT,
-    steps_text TEXT,
-    nutrition_json TEXT,
-    source TEXT CHECK (source IN ('ai', 'user', 'url')),
-    created_at TEXT NOT NULL
-);
-
-CREATE INDEX IF NOT EXISTS idx_recipes_title ON recipes(title);
-
-
-CREATE TABLE IF NOT EXISTS tags (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT UNIQUE NOT NULL
-);
-
-
-CREATE TABLE IF NOT EXISTS recipe_tags (
-    recipe_id INTEGER NOT NULL,
-    tag_id INTEGER NOT NULL,
-    PRIMARY KEY (recipe_id, tag_id),
-    FOREIGN KEY (recipe_id) REFERENCES recipes(id) ON DELETE CASCADE,
-    FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
-);
-
-CREATE INDEX IF NOT EXISTS idx_recipe_tags_recipe_id ON recipe_tags(recipe_id); -- что-то для более быстрого поиска
-CREATE INDEX IF NOT EXISTS idx_recipe_tags_tag_id ON recipe_tags(tag_id);
+------------------------------- эрнест
 
 
 CREATE TABLE IF NOT EXISTS notification_templates (

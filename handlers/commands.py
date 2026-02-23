@@ -3,8 +3,9 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 
-
-from database import save_user_profile
+from services import message_maker
+from ai_client import make_week_plan
+from database import save_user_profile, register_user_if_not_exists, get_user_id_by_tgid
 # Создаем роутер
 router = Router()
 
@@ -21,6 +22,7 @@ class UserSurvey(StatesGroup):
 # Хэндлер для старта опроса
 @router.message(Command("start"))
 async def start_survey(message: types.Message, state: FSMContext):
+    register_user_if_not_exists(message.from_user.id) # сохраняем пользователя в таблицу users
     await message.answer("Привет! Давайте начнем опрос. Укажите ваш рост (в см):")
     await state.set_state(UserSurvey.waiting_for_height)
 
@@ -35,18 +37,6 @@ async def get_height(message: types.Message, state: FSMContext):
     try:
         height = int(message.text)
         await state.update_data(height=height)
-
-        user_data = await state.get_data()
-        save_user_profile(
-            user_id=message.from_user.id,
-            height_cm=user_data.get("height"),
-            weight_kg=user_data.get("weight"),
-            goal=user_data.get("goal"),
-            sex=user_data.get("sex"),
-            birthdate=user_data.get("birthdate"),
-            activity_level=user_data.get("activity_level")
-        )
-
 
         await message.answer("Отлично! Теперь укажите ваш вес (в кг):")
         await state.set_state(UserSurvey.waiting_for_weight)
@@ -65,18 +55,6 @@ async def get_weight(message: types.Message, state: FSMContext):
         weight = float(message.text)
         await state.update_data(weight=weight)
 
-        user_data = await state.get_data()
-        save_user_profile(
-            user_id=message.from_user.id,
-            height_cm=user_data.get("height"),
-            weight_kg=user_data.get("weight"),
-            goal=user_data.get("goal"),
-            sex=user_data.get("sex"),
-            birthdate=user_data.get("birthdate"),
-            activity_level=user_data.get("activity_level")
-        )
-
-
         await message.answer("Какая у вас цель? Например: похудение, набор массы, поддержание формы.")
         await state.set_state(UserSurvey.waiting_for_goal)
     except ValueError:
@@ -92,31 +70,10 @@ async def get_goal(message: types.Message, state: FSMContext):
 
     goal = message.text
     await state.update_data(goal=goal)
-
-    user_data = await state.get_data()
-    save_user_profile(
-        user_id=message.from_user.id,
-        height_cm=user_data.get("height"),
-        weight_kg=user_data.get("weight"),
-        goal=user_data.get("goal"),
-        sex=user_data.get("sex"),
-        birthdate=user_data.get("birthdate"),
-        activity_level=user_data.get("activity_level")
-    )
-
     
     await message.answer("Какой у вас пол?")
     await state.set_state(UserSurvey.waiting_for_sex)
 
-
-    # # Отправляем подтверждение
-    # await message.answer(
-    #     f"Спасибо за ответы!\n"
-    #     f"Ваш рост: {user_data['height']} см\n"
-    #     f"Ваш вес: {user_data['weight']} кг\n"
-    #     f"Ваша цель: {user_data['goal']}",
-    #     reply_markup=types.ReplyKeyboardRemove()
-    # )
 
 
     # Хэндлер для получения пола
@@ -130,18 +87,6 @@ async def get_weight(message: types.Message, state: FSMContext):
     try:
         sex = message.text
         await state.update_data(sex=sex)
-
-        user_data = await state.get_data()
-        save_user_profile(
-            user_id=message.from_user.id,
-            height_cm=user_data.get("height"),
-            weight_kg=user_data.get("weight"),
-            goal=user_data.get("goal"),
-            sex=user_data.get("sex"),
-            birthdate=user_data.get("birthdate"),
-            activity_level=user_data.get("activity_level")
-        )
-
 
         await message.answer("Какой у вас уровень активности?")
         await state.set_state(UserSurvey.waiting_for_activity_level)
@@ -159,16 +104,6 @@ async def get_activity_level(message: types.Message, state: FSMContext):
     activity_level = message.text
     await state.update_data(activity_level=activity_level)
 
-    user_data = await state.get_data()
-    save_user_profile(
-        user_id=message.from_user.id,
-        height_cm=user_data.get("height"),
-        weight_kg=user_data.get("weight"),
-        goal=user_data.get("goal"),
-        sex=user_data.get("sex"),
-        birthdate=user_data.get("birthdate"),
-        activity_level=user_data.get("activity_level")
-    )
 
     await message.answer("Укажите вашу дату рождения в формате ГГГГ-ММ-ДД:")
     await state.set_state(UserSurvey.waiting_for_birthdate)
@@ -187,8 +122,9 @@ async def get_birthdate(message: types.Message, state: FSMContext):
         await state.update_data(birthdate=birthdate)
 
         user_data = await state.get_data()
+        user_id = get_user_id_by_tgid(message.from_user.id)
         save_user_profile(
-            user_id=message.from_user.id,
+            user_id=user_id,
             height_cm=user_data.get("height"),
             weight_kg=user_data.get("weight"),
             goal=user_data.get("goal"),
@@ -197,17 +133,21 @@ async def get_birthdate(message: types.Message, state: FSMContext):
             activity_level=user_data.get("activity_level")
         )
 
-        await message.answer(
-            f"Спасибо за ответы!\n"
-            f"Ваш рост: {user_data['height']} см\n"
-            f"Ваш вес: {user_data['weight']} кг\n"
-            f"Ваша цель: {user_data['goal']}\n"
-            f"Ваш пол: {user_data['sex']}\n"
-            f"Ваш уровень активности: {user_data['activity_level']}\n"
-            f"Ваша дата рождения: {user_data['birthdate']}",
-            reply_markup=types.ReplyKeyboardRemove()
-        )
+        description = message_maker.get_user_description(message.from_user.id)
+        model = 'google/gemini-2.0-flash-lite-001'
+        temperature = None
+
+        week_plan_json = await make_week_plan(description,model, temperature)
+
+        plan_messages = message_maker.get_week_plan(week_plan_json)
+
+        for msg_text in plan_messages:
+            await message.answer(msg_text, parse_mode="Markdown")
 
         await state.clear()
-    except ValueError:
+    except ValueError: # проверки формата нет!
         await message.answer("Пожалуйста, введите дату рождения в формате ГГГГ-ММ-ДД:")
+    
+    except Exception as e:
+        await state.clear()
+        await message.answer(f"Просим прощение! Неизвестная ошибка при создании ответа. Текст ошибки: {e}. Это сообщение нужно потом убрать. Вы можете начнать диалог снова с команды /start")
