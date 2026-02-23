@@ -35,7 +35,7 @@ async def ask_llm(description: str, system_msg:str, model: str, temp: float = No
                 ],
                 # JSON-режим: просим модель возвращать JSON-объект [web:81][web:85]
                 response_format={"type": "json_object"},
-                max_tokens=200,
+                max_tokens=20000,
                 temperature=temp,
             )
             print("после получения ответа")
@@ -96,6 +96,7 @@ async def make_week_plan(description: str, model:str, temperature: float) -> dic
             { "type": "dinner", "recipe": { ... } }
         ]
         },
+        {
         "day_number": 2,
         "meals": [
             {

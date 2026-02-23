@@ -5,7 +5,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-DB_URL = os.getenv("DATABASE_URL", "sqlite:///database.db") # возможно лишнее
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 if not BOT_TOKEN:
