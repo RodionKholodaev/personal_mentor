@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS user_profile (
     goal TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    -- тут нужно хранить бжу и каллории
 );
 
 
@@ -55,6 +56,9 @@ CREATE TABLE IF NOT EXISTS weekly_shopping_lists (
 );
 
 CREATE INDEX IF NOT EXISTS idx_meals_query ON generated_meals(user_id, planned_date);
+
+------------------------------- эрнест
+
 
 CREATE TABLE IF NOT EXISTS notification_templates (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
