@@ -145,5 +145,9 @@ async def get_birthdate(message: types.Message, state: FSMContext):
             await message.answer(msg_text, parse_mode="Markdown")
 
         await state.clear()
-    except ValueError:
+    except ValueError: # проверки формата нет!
         await message.answer("Пожалуйста, введите дату рождения в формате ГГГГ-ММ-ДД:")
+    
+    except Exception as e:
+        await state.clear()
+        await message.answer(f"Просим прощение! Неизвестная ошибка при создании ответа. Текст ошибки: {e}. Это сообщение нужно потом убрать. Вы можете начнать диалог снова с команды /start")
