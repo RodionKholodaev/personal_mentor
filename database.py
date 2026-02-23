@@ -27,6 +27,43 @@ def init_db():
         conn.close()
 
 
+
+def register_user_if_not_exists(tg_user_id: int, timezone: str = "UTC"):
+    """
+    Создает запись в таблице users, если tg_user_id еще не зарегистрирован.
+    """
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        now = datetime.now().isoformat()
+        # INSERT OR IGNORE предотвратит ошибку, если пользователь уже нажимал /start ранее
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT OR IGNORE INTO users (tg_user_id, timezone, created_at)
+            VALUES (?, ?, ?)
+        """, (tg_user_id, timezone, now))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def get_user_id_by_tgid(tg_user_id):
+    try:
+        conn = sqlite3.connect("database.db")
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT id FROM users WHERE tg_user_id = ?", (tg_user_id,))
+        row = cursor.fetchone()
+        if not row:
+            raise Exception("нет пользователя с таким tg_user_id")
+        
+        user_id = row[0]
+
+        return user_id
+    finally:
+        conn.close()
+        
+
+
 def save_user_profile(user_id, sex=None, birthdate=None, height_cm=None, weight_kg=None, activity_level=None, goal=None):
 
     conn = sqlite3.connect("database.db")
