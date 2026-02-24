@@ -142,6 +142,7 @@ async def get_birthdate(message: types.Message, state: FSMContext):
         # вывод всех блюд на неделю
         week_plan_list = []
         for day in range(7):
+            await message.answer(f"День {day+1}")
             day_plan_json = await make_day_plan(description,model, temperature)
 
             week_plan_list.append(day_plan_json)
