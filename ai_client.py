@@ -55,11 +55,11 @@ async def ask_llm(description: str, system_msg:str, model: str, temp: float = No
 
     return error
 
-async def make_week_plan(description: str, model:str, temperature: float) -> dict: 
+async def make_day_plan(description: str, model:str, temperature: float) -> dict: 
 
-    print("попал в make_week_plan")
+    print("попал в make_day_plan")
     system_msg = """
-    Ты — профессиональный диетолог и шеф-повар. Твоя задача: составить план питания на 7 дней (21 прием пищи: завтрак, обед, ужин).
+    Ты — профессиональный диетолог и шеф-повар. Твоя задача: составить план питания на 1 днень (3 приема пищи: завтрак, обед, ужин).
 
     Данные пользователя:
     - Пол, возраст, рост, вес (для расчета КБЖУ).
@@ -72,71 +72,74 @@ async def make_week_plan(description: str, model:str, temperature: float) -> dic
     3. Каждый рецепт должен быть уникальным и соответствовать целям пользователя.
     4. Используй русский язык для описаний.
     5. расписывай шаги подробно
-    6. В конце JSON добавь объект "shopping_list".
-    7. "shopping_list" должен содержать агрегированный список всех продуктов, необходимых для приготовления всех 21 блюда.
-    8. Одинаковые продукты должны быть суммированы. Например, если лук встречается в 5 рецептах по 50г, в списке покупок должно быть: "item": "Лук", "amount": 250, "unit": "г".
 
     Структура JSON:
     {
-    "weekly_plan": [
+    "meals": [
         {
-        "day_number": 1,
-        "meals": [
-            {
-            "type": "breakfast",
-            "recipe": {
-                "title": "Название блюда",
-                "ingredients": ["ингредиент 1", "ингредиент 2"],
-                "instructions": ["шаг 1", "шаг 2"],
-                "nutrients": {"kcal": 0, "protein": 0, "fat": 0, "carbs": 0},
-                "cooking_time_min": 20
-            }
-            },
-            { "type": "lunch", "recipe": { ... } },
-            { "type": "dinner", "recipe": { ... } }
-        ]
+        "type": "breakfast",
+        "recipe": {
+            "title": "Название блюда",
+            "ingredients": ["ингредиент 1", "ингредиент 2"],
+            "instructions": ["шаг 1", "шаг 2"],
+            "nutrients": {"kcal": 0, "protein": 0, "fat": 0, "carbs": 0},
+            "cooking_time_min": 20
+        }
         },
-        {
-        "day_number": 2,
-        "meals": [
-            {
-            "type": "breakfast",
-            "recipe": {
-                "title": "Название блюда",
-                "ingredients": ["ингредиент 1", "ингредиент 2"],
-                "instructions": ["шаг 1", "шаг 2"],
-                "nutrients": {"kcal": 0, "protein": 0, "fat": 0, "carbs": 0},
-                "cooking_time_min": 20
-            }
-            },
-            { "type": "lunch", "recipe": { ... } },
-            { "type": "dinner", "recipe": { ... } }
-        ]
-        },
-        и так далее все 7 дней
-    ]
-    "shopping_list": [
-    {
-        "item": "Название продукта(например картошка)",
-        "amount": 500,
-        "unit": "г",
-        "category": "Овощи"
-    },
-    {
-        "item": "Название продукта(например помело)",
-        "amount": 1,
-        "unit": "шт",
-        "category": "Фрукт"
-    },
-    и так далее все продукты что нужны для всех рецептов
+        { "type": "lunch", "recipe": { ... } },
+        { "type": "dinner", "recipe": { ... } }
     ]
     }
-    Приемы пищи должны быть разнообразны и соответствовать пожеланиям пользователя!
+    Приемы пищи должны быть разнообразны и соответствовать описанию пользователя!
     Давай правильн на калории, белки, жиры и углеводы
     """
     data = await ask_llm(description, system_msg, model = model, temp = temperature)
     return data
     
+
+async def make_shoping_list(description: str, model:str, temperature: float) -> dict:
+    system_msg="""
+    Ты — логист по закупкам.
+    Твоя задача — проанализировать предоставленный план питания на 7 дней (21 прием пищи) и составить консолидированный список покупок.
+    Инструкции:
+
+    Суммирование:
+    Найди одинаковые продукты во всех рецептах и суммируй их количество или вес.
+
+    Конвертация:
+    Приводи единицы измерения к единому стандарту (например, если в одном рецепте 200 г моркови, а в другом 1 кг — в списке должно быть 1.2 кг).
+
+    Категоризация:
+    Распредели продукты по логическим категориям (Овощи, Фрукты, Мясо и птица, Бакалея, Молочные продукты и т.д.).
+
+    Точность:
+    Учитывай мелкие ингредиенты (специи, масла, соусы), если они указаны в рецептах.
+
+    Формат:
+    Выдавай ответ строго в формате JSON. Не добавляй никаких вступительных или заключительных фраз.
+
+    Формат вывода:
+    {
+    "shopping_list": [
+        {
+        "item": "Название продукта",
+        "amount": число,
+        "unit": "единица измерения (г, шт, мл, кг)",
+        "category": "Категория"
+        },
+        {
+        "item": "Название продукта",
+        "amount": число,
+        "unit": "единица измерения (г, шт, мл, кг)",
+        "category": "Категория"
+        },
+        и так далее все продукты что нужны для всех рецептов
+    ]
+    }
+    """
+    data = await ask_llm(description, system_msg, model = model, temp = temperature)
+    return data
+
 
 async def edit_week_plan(message:str, model:str, temperature:float) -> dict:
     """
@@ -148,3 +151,5 @@ async def edit_week_plan(message:str, model:str, temperature:float) -> dict:
     description = message
     data = await ask_llm(description, system_msg, model, temperature)
     return data
+
+

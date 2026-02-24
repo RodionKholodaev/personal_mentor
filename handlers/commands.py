@@ -3,8 +3,8 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 
-from services import message_maker
-from ai_client import make_week_plan
+from services import MessageMaker
+from ai_client import make_day_plan, make_shoping_list
 from database import save_user_profile, register_user_if_not_exists, get_user_id_by_tgid
 # Создаем роутер
 router = Router()
@@ -133,16 +133,32 @@ async def get_birthdate(message: types.Message, state: FSMContext):
             activity_level=user_data.get("activity_level")
         )
 
-        description = message_maker.get_user_description(message.from_user.id)
+        await message.answer("Формирую план питания, это займёт ~1 минуту")
+
+        description = MessageMaker.get_user_description(message.from_user.id)
         model = 'google/gemini-2.0-flash-lite-001'
         temperature = None
 
-        week_plan_json = await make_week_plan(description,model, temperature)
+        # вывод всех блюд на неделю
+        week_plan_list = []
+        for day in range(7):
+            day_plan_json = await make_day_plan(description,model, temperature)
 
-        plan_messages = message_maker.get_week_plan(week_plan_json)
+            week_plan_list.append(day_plan_json)
 
-        for msg_text in plan_messages:
-            await message.answer(msg_text, parse_mode="Markdown")
+            plan_messages = MessageMaker.get_day_plan(day_plan_json)
+
+            for msg_text in plan_messages:
+                await message.answer(msg_text, parse_mode="HTML")
+        # формирование описания все неделе для отдачи в нейросеть
+        description_shoping_list = MessageMaker.create_week_plan_message(week_plan_list)
+        # получение списка покупок
+        shoping_list_dict = await make_shoping_list(description_shoping_list,model, temperature)
+        # список покупок в виде текста
+        shoping_list_text = MessageMaker.get_shopping_list_text(shoping_list_dict)
+        # вывод списка покупок
+        await message.answer(shoping_list_text,parse_mode="HTML")
+
 
         await state.clear()
     except ValueError: # проверки формата нет!
