@@ -19,6 +19,17 @@ class MessageMaker:
         """
         return description
 
+
+    @staticmethod
+    def get_previous_days(week_plan_list : list[dict]) -> str:
+        dishes = ""
+        for day in range(len(week_plan_list)):
+            dishes += f"День {day+1}: \n"
+            for dish in week_plan_list[day]["meals"]:
+                dishes += f"{dish["type"]}: {dish["recipe"]["title"]} \n"
+
+        return dishes
+
 # функции ниже скороее всего нужно будет править!
     @staticmethod
     def get_day_plan(day_plan_json: dict) -> list[str]:

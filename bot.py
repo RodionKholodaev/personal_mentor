@@ -1,7 +1,7 @@
 import asyncio
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
-from handlers.commands import router  # Импортируем роутер из commands.py
+from handlers.commands import router  
 from config import BOT_TOKEN
 
 from database import init_db

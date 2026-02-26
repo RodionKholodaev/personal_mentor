@@ -141,16 +141,23 @@ async def get_birthdate(message: types.Message, state: FSMContext):
 
         # вывод всех блюд на неделю
         week_plan_list = []
+        previous_days = "" # нужно чтобы нейросеть не выдавала один и тот же рецепт каждый день
+
         for day in range(7):
             await message.answer(f"День {day+1}")
-            day_plan_json = await make_day_plan(description,model, temperature)
+
+            day_plan_json = await make_day_plan(description, previous_days, model, temperature)
 
             week_plan_list.append(day_plan_json)
+
+            previous_days = MessageMaker.get_previous_days(week_plan_list)
+            print(previous_days)
 
             plan_messages = MessageMaker.get_day_plan(day_plan_json)
 
             for msg_text in plan_messages:
                 await message.answer(msg_text, parse_mode="HTML")
+                
         # формирование описания все неделе для отдачи в нейросеть
         description_shoping_list = MessageMaker.create_week_plan_message(week_plan_list)
         # получение списка покупок

@@ -55,7 +55,7 @@ async def ask_llm(description: str, system_msg:str, model: str, temp: float = No
 
     return error
 
-async def make_day_plan(description: str, model:str, temperature: float) -> dict: 
+async def make_day_plan(description: str, previous_days: str, model:str, temperature: float) -> dict: 
 
     print("попал в make_day_plan")
     system_msg = """
@@ -92,7 +92,15 @@ async def make_day_plan(description: str, model:str, temperature: float) -> dict
     }
     Приемы пищи должны быть разнообразны и соответствовать описанию пользователя!
     Давай правильн на калории, белки, жиры и углеводы
+
     """
+    addition_inf = f"""
+    Вот блюда которые уже были на этой неделе (показываю чтобы ты не давал все время одно и то же блюдо):
+    {previous_days}
+    Не обязательно делать каждый день новое блюдо. Главное чтобы не было так что одно блюдо всю неделю.
+    """
+    system_msg = system_msg + addition_inf
+    
     data = await ask_llm(description, system_msg, model = model, temp = temperature)
     return data
     
