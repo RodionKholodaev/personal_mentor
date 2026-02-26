@@ -8,3 +8,12 @@ sex_keyboard = ReplyKeyboardMarkup(
     resize_keyboard=True,
     one_time_keyboard=True  # клавиатура свернётся после нажатия
 )
+
+accept_keyboard = ReplyKeyboardMarkup(
+    keyboard=[
+        [KeyboardButton(text="Принять")],
+        [KeyboardButton(text="Изменить")]
+    ],
+    resize_keyboard=True,
+    one_time_keyboard=True  
+)

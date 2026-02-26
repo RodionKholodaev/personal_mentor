@@ -1,3 +1,5 @@
+from email.mime import message
+
 from aiogram import Router, types
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
@@ -7,7 +9,7 @@ from services import MessageMaker
 from ai_client import make_day_plan, make_shoping_list
 from database import save_user_profile, register_user_if_not_exists, get_user_id_by_tgid
 
-from keyboards import sex_keyboard
+from keyboards import sex_keyboard, accept_keyboard
 # Создаем роутер
 router = Router()
 
@@ -20,6 +22,9 @@ class UserSurvey(StatesGroup):
     waiting_for_sex = State()
     waiting_for_activity_level = State()
     waiting_for_birthdate = State()
+    
+    waiting_for_day_approval = State()
+    waiting_for_edit = State()
 
 # Хэндлер для старта опроса
 @router.message(Command("start"))
@@ -81,7 +86,7 @@ async def get_goal(message: types.Message, state: FSMContext):
 
 
 
-    # Хэндлер для получения пола
+# Хэндлер для получения пола
 @router.message(UserSurvey.waiting_for_sex)
 async def get_weight(message: types.Message, state: FSMContext):
     if message.text.lower() == "отмена":
@@ -144,29 +149,46 @@ async def get_birthdate(message: types.Message, state: FSMContext):
 
         await message.answer("Формирую план питания, это займёт ~1 минуту")
 
+
+        await state.clear()
+    except ValueError: # проверки формата нет!
+        await message.answer("Пожалуйста, введите дату рождения в формате ГГГГ-ММ-ДД:")
+    
+    except Exception as e:
+        await state.clear()
+        await message.answer(f"Просим прощение! Неизвестная ошибка при создании ответа. Текст ошибки: {e}. Это сообщение нужно потом убрать. Вы можете начнать диалог снова с команды /start")
+
+# храню глобально чтобы можно было обращаться к предыдущим дням при формировании плана на новый день
+week_plan_list = []
+previous_days = "" # нужно чтобы нейросеть не выдавала один и тот же рецепт каждый день
+day=1
+model = 'google/gemini-2.0-flash-lite-001'
+temperature = None
+async def generate_day_plan(message: types.Message):
+
         description = MessageMaker.get_user_description(message.from_user.id)
         model = 'google/gemini-2.0-flash-lite-001'
         temperature = None
 
-        # вывод всех блюд на неделю
-        week_plan_list = []
-        previous_days = "" # нужно чтобы нейросеть не выдавала один и тот же рецепт каждый день
+        await message.answer(f"День {day}")
 
-        for day in range(7):
-            await message.answer(f"День {day+1}")
+        day_plan_json = await make_day_plan(description, previous_days, model, temperature)
 
-            day_plan_json = await make_day_plan(description, previous_days, model, temperature)
+        week_plan_list.append(day_plan_json)
 
-            week_plan_list.append(day_plan_json)
+        previous_days = MessageMaker.get_previous_days(week_plan_list)
+        print(previous_days)
 
-            previous_days = MessageMaker.get_previous_days(week_plan_list)
-            print(previous_days)
+        plan_messages = MessageMaker.get_day_plan(day_plan_json)
 
-            plan_messages = MessageMaker.get_day_plan(day_plan_json)
+        for msg_text in plan_messages:
+            await message.answer(msg_text, parse_mode="HTML")
 
-            for msg_text in plan_messages:
-                await message.answer(msg_text, parse_mode="HTML")
-                
+        await message.answer(
+            "Нужно ли внести изменения в этот день?",
+            reply_markup=accept_keyboard
+        )
+async def give_shoping_list(message: types.Message): # что-то не то, оно не будет работать. Я не смогу передать message
         # формирование описания все неделе для отдачи в нейросеть
         description_shoping_list = MessageMaker.create_week_plan_message(week_plan_list)
         # получение списка покупок
@@ -176,11 +198,16 @@ async def get_birthdate(message: types.Message, state: FSMContext):
         # вывод списка покупок
         await message.answer(shoping_list_text,parse_mode="HTML")
 
+        await message.answer("Хорошо, вот план питания и список покупок на неделю")
 
-        await state.clear()
-    except ValueError: # проверки формата нет!
-        await message.answer("Пожалуйста, введите дату рождения в формате ГГГГ-ММ-ДД:")
-    
-    except Exception as e:
-        await state.clear()
-        await message.answer(f"Просим прощение! Неизвестная ошибка при создании ответа. Текст ошибки: {e}. Это сообщение нужно потом убрать. Вы можете начнать диалог снова с команды /start")
+
+
+'''так, что не так. сейчас в рабочей версии тяжело встроить проверку пользователем полученного плана на день.
+нужно освободить хендлер для получения даты рождения и делать дальнейшие операции вне него.
+задачи:
+сделать хендлер для принятия задачи (он просто вызывает генерацию следующего дня, как его генерировать не совсем понятно)
+сделать хендлер редактирования, в нем находимся на состоянии waiting_for_edit и отправляем в нейросеть полное описание дня и просью пользователя
+сделать фукнцию генерации на день, непонятно как в нее передавать message
+
+
+буду работать в отдельной ветке'''

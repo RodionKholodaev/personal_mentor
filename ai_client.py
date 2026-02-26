@@ -151,7 +151,7 @@ async def make_shoping_list(description: str, model:str, temperature: float) -> 
 
 async def edit_week_plan(message:str, model:str, temperature:float) -> dict:
     """
-    описание функции
+    функция для редактирования плана на неделю
     """
     system_msg = f'''
     
