@@ -6,6 +6,8 @@ from aiogram.fsm.state import State, StatesGroup
 from services import MessageMaker
 from ai_client import make_day_plan, make_shoping_list
 from database import save_user_profile, register_user_if_not_exists, get_user_id_by_tgid
+
+from keyboards import sex_keyboard
 # Создаем роутер
 router = Router()
 
@@ -71,7 +73,10 @@ async def get_goal(message: types.Message, state: FSMContext):
     goal = message.text
     await state.update_data(goal=goal)
     
-    await message.answer("Какой у вас пол?")
+    await message.answer(
+        "Какой у вас пол?",
+        reply_markup=sex_keyboard
+    )
     await state.set_state(UserSurvey.waiting_for_sex)
 
 
@@ -85,6 +90,10 @@ async def get_weight(message: types.Message, state: FSMContext):
         return
 
     try:
+        if message.text not in ["Мужской", "Женский"]:
+            message.answer("Пожалуйста, выберете вариант с клавиатуры")
+            return
+        
         sex = message.text
         await state.update_data(sex=sex)
 
