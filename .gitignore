@@ -27,3 +27,6 @@ database.db
 
 .env
 *.env
+
+*.log
+*.py1
