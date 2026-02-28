@@ -60,30 +60,29 @@ CREATE INDEX IF NOT EXISTS idx_meals_query ON generated_meals(user_id, planned_d
 ------------------------------- эрнест
 
 
-CREATE TABLE IF NOT EXISTS notification_templates (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    key TEXT UNIQUE NOT NULL,
-    text TEXT NOT NULL,
-    created_at TEXT NOT NULL
-);
+--CREATE TABLE IF NOT EXISTS notification_templates (
+--    id INTEGER PRIMARY KEY AUTOINCREMENT,
+--    key TEXT UNIQUE NOT NULL,
+--    text TEXT NOT NULL,
+--    created_at TEXT NOT NULL
+--);
 
 
 CREATE TABLE IF NOT EXISTS notifications (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
-    type TEXT NOT NULL,
-    scheduled_at TEXT NOT NULL,
+    type TEXT NOT NULL,              -- "breakfast", "workout", "water"
+    text TEXT NOT NULL,              -- Готовое сообщение
+    scheduled_at TEXT NOT NULL,      -- "2026-02-28 08:00:00"
     status TEXT NOT NULL CHECK (status IN ('scheduled', 'sent', 'canceled', 'failed')),
-    template_id INTEGER,
-    payload_json TEXT,
+    payload_json TEXT,               -- {"calories": 450, "recipe": "..."}
     created_at TEXT NOT NULL,
     sent_at TEXT,
-    error TEXT,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (template_id) REFERENCES notification_templates(id) ON DELETE SET NULL
+    error TEXT,                      -- "User blocked bot"
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
-CREATE INDEX IF NOT EXISTS idx_notifications_status ON notifications(status);
+CREATE INDEX IF NOT EXISTS idx_notifications_status ON notifications(status);    
 CREATE INDEX IF NOT EXISTS idx_notifications_scheduled_at ON notifications(scheduled_at);
 
