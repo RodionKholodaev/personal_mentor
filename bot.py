@@ -21,10 +21,17 @@ async def main():
     # Запуск polling
     init_db()
     try:
-        await dp.start_polling(bot, skip_updates=True)
-    except KeyboardInterrupt:
-        logger.info("Отключение бота...")
+        await dp.start_polling(
+            bot,
+            skip_updates=True,
+            handle_signals=False
+        )
+    except (KeyboardInterrupt, asyncio.CancelledError):
+        logger.info("Остановка по Ctrl+C")
+    except Exception as e:
+        logger.error(f"Неожиданная ошибка: {e}")
     finally:
+        logger.info("Закрытие соединений")
         await bot.session.close()
         await dp.storage.close()
 

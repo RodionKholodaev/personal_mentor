@@ -27,7 +27,7 @@ class UserSurvey(StatesGroup):
 # Хэндлер для старта опроса
 @router.message(Command("start"))
 async def start_survey(message: types.Message, state: FSMContext):
-    logger.info(f"Пользователь ID:{message.from_user.id} NAME:{message.from_user.full_name} запустил бота")
+    logger.info(f'Пользователь ID:{message.from_user.id} NAME:"{message.from_user.full_name}" запустил бота')
 
     register_user_if_not_exists(message.from_user.id) # сохраняем пользователя в таблицу users
     await message.answer("Привет! Давайте начнем опрос. Укажите ваш рост (в см):")
