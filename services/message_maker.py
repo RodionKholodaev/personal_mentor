@@ -1,5 +1,7 @@
 from database import get_user_profile
 import json
+
+
 class MessageMaker:
     @staticmethod
     def get_user_description(user_id: int) -> str:

@@ -47,8 +47,10 @@ def register_user_if_not_exists(tg_user_id: int, timezone: str = "UTC"):
 
 
 def get_user_id_by_tgid(tg_user_id):
+    
+    conn = sqlite3.connect(DB_PATH)
+
     try:
-        conn = sqlite3.connect("database.db")
         cursor = conn.cursor()
 
         cursor.execute("SELECT id FROM users WHERE tg_user_id = ?", (tg_user_id,))
@@ -66,7 +68,8 @@ def get_user_id_by_tgid(tg_user_id):
 
 def save_user_profile(user_id, sex=None, birthdate=None, height_cm=None, weight_kg=None, activity_level=None, goal=None):
 
-    conn = sqlite3.connect("database.db")
+    conn = sqlite3.connect(DB_PATH)
+
     try:
         conn.execute("PRAGMA foreign_keys = ON;")
         cursor = conn.cursor()
@@ -100,7 +103,7 @@ def save_user_profile(user_id, sex=None, birthdate=None, height_cm=None, weight_
 
 def get_user_profile(tg_user_id: int)-> dict | None:
 
-    conn = sqlite3.connect('database.db')
+    conn = sqlite3.connect(DB_PATH)
     
     # Настраиваем row_factory, чтобы получать данные в виде словаря, а не кортежа
     conn.row_factory = sqlite3.Row

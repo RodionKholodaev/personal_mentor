@@ -3,7 +3,7 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 
-from services import MessageMaker
+from services.message_maker import MessageMaker
 from ai_client import make_day_plan, make_shoping_list
 from database import save_user_profile, register_user_if_not_exists, get_user_id_by_tgid
 
